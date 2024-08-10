@@ -1,8 +1,10 @@
-require('dotenv').config();
+import dotenv from 'dotenv';
+import express from 'express';
+import mysql from 'mysql2';
+import bodyParser from 'body-parser';
 
-const express = require('express');
-const mysql = require('mysql2');
-const bodyParser = require('body-parser');
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
+dotenv.config({ path: envFile });
 
 const app = express();
 const port = 3000;
@@ -65,3 +67,6 @@ app.delete('/tasks/:id', (req, res) => {
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
+
+export default app;
+
