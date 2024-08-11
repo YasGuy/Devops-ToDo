@@ -19,99 +19,37 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
+        stage('Build and Test') {
             steps {
                 checkout scm
-            }
-        }
 
-        stage('Start MySQL') {
-            steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: "${DB_CREDENTIALS_ID}", usernameVariable: 'DB_USER', passwordVariable: 'DB_PASSWORD')]) {
-                        sh """
-                            docker run -d \
-                              --name mysql-db \
-                              -e MYSQL_ROOT_PASSWORD=${DB_PASSWORD} \
-                              -e MYSQL_DATABASE=${DB_NAME} \
-                              -p ${DB_PORT}:3306 \
-                              mysql:9.0
-                        """
-                    }
+                // Start MySQL
+                withCredentials([usernamePassword(credentialsId: "${DB_CREDENTIALS_ID}", usernameVariable: 'DB_USER', passwordVariable: 'DB_PASSWORD')]) {
+                    sh "docker run -d --name mysql-db -e MYSQL_ROOT_PASSWORD=${DB_PASSWORD} -e MYSQL_DATABASE=${DB_NAME} -p ${DB_PORT}:3306 mysql:9.0"
                 }
-            }
-        }
 
-        stage('Wait for MySQL') {
-            steps {
-                script {
-                    sh 'until mysql -h ${DB_HOST} -P ${DB_PORT} -u ${DB_USER} -p${DB_PASSWORD} -e "SELECT 1;" > /dev/null 2>&1; do echo "Waiting for MySQL..."; sleep 5; done'
-                }
-            }
-        }
+                // Wait for MySQL
+                sh "until mysql -h ${DB_HOST} -P ${DB_PORT} -u ${DB_USER} -p${DB_PASSWORD} -e \"SELECT 1;\" > /dev/null 2>&1; do echo \"Waiting for MySQL...\"; sleep 5; done"
 
-        stage('Initialize Database') {
-            steps {
-                script {
-                    withCredentials([string(credentialsId: "${REPLACEMENT_PASSWORD}", variable: 'REPLACEMENT_PASSWORD')]) {
-                        sh """
-                            sed -i 's/PLACEHOLDER_PASSWORD/${REPLACEMENT_PASSWORD}/g' init.sql
-                            docker exec -i mysql-db mysql -h ${DB_HOST} -P ${DB_PORT} -u ${DB_USER} -p${DB_PASSWORD} ${DB_NAME} < init.sql
-                        """
-                    }
+                // Initialize Database
+                withCredentials([string(credentialsId: "${REPLACEMENT_PASSWORD}", variable: 'REPLACEMENT_PASSWORD')]) {
+                    sh "sed -i 's/PLACEHOLDER_PASSWORD/${REPLACEMENT_PASSWORD}/g' init.sql"
+                    sh "docker exec -i mysql-db mysql -h ${DB_HOST} -P ${DB_PORT} -u ${DB_USER} -p${DB_PASSWORD} ${DB_NAME} < init.sql"
                 }
-            }
-        }
 
-        stage('Install Dependencies') {
-            steps {
-                script {
-                    docker.image('node:22').inside {
-                        sh 'npm install'
-                    }
+                // Install Dependencies and Test
+                docker.image('node:22').inside {
+                    sh 'npm install'
+                    sh 'npm test'
                 }
-            }
-        }
 
-        stage('Start App and Test') {
-            parallel {
-                stage('Start App') {
-                    steps {
-                        script {
-                            docker.image('node:22').inside {
-                                sh 'nohup npm start &'
-                            }
-                        }
-                    }
-                }
-                
-                stage('Test') {
-                    steps {
-                        script {
-                            docker.image('node:22').inside {
-                                sh 'npm test'
-                            }
-                        }
-                    }
-                }
-            }
-        }
+                // Build Docker Image
+                sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
 
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    sh 'docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} .'
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh 'docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}'
-                        sh 'docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}'
-                    }
+                // Push Docker Image
+                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
+                    sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
                 }
             }
         }
@@ -119,10 +57,8 @@ pipeline {
 
     post {
         always {
-            script {
-                sh 'docker stop mysql-db || true'
-                sh 'docker rm mysql-db || true'
-            }
+            sh 'docker stop mysql-db || true'
+            sh 'docker rm mysql-db || true'
             cleanWs()
         }
 
