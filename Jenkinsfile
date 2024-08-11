@@ -39,10 +39,12 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                docker.image('node:22').inside {
-                    sh '''
-                    npm install
-                    '''
+                script {
+                    docker.image('node:22').inside {
+                        sh '''
+                        npm install
+                        '''
+                    }
                 }
             }
         }
@@ -72,15 +74,21 @@ pipeline {
             parallel {
                 stage('Start App') {
                     steps {
-                        docker.image('node:22').inside {
-                            sh 'nohup npm start &'
+                        script {
+                            docker.image('node:22').inside {
+                                sh 'nohup npm start &'
+                            }
                         }
                     }
                 }
                 
                 stage('Test') {
-                    docker.image('node:22').inside {
-                        sh 'npm test'
+                    steps {
+                        script {
+                            docker.image('node:22').inside {
+                                sh 'npm test'
+                            }
+                        }
                     }
                 }
             }
