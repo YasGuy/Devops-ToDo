@@ -1,5 +1,10 @@
 pipeline {
-    agent any  // This runs the pipeline on a Jenkins node (host machine)
+    agent {
+        docker {
+            image 'node:22'
+            args '-u root'
+        }
+    }
 
     environment {
         NODE_VERSION = '22'
@@ -40,18 +45,9 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    docker.image('node:22').inside {
-                        sh '''
-                        # Fix permissions for npm directory directly
-                        chown -R node:node /usr/local/lib/node_modules
-                        chown -R node:node /home/node/.npm
-
-                        # Run npm install
-                        npm install
-                        '''
-                    }
+                    sh 'npm install'
                 }
-            }
+        }  // This runs the pipeline on a Jenkins node (host machine)
         }
 
         stage('Wait for MySQL') {
