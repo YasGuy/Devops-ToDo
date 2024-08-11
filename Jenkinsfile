@@ -42,17 +42,6 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
-            steps {
-                script {
-                    // Run npm install inside the Docker container
-                    docker.image('node:22').inside {
-                        sh 'npm install'
-                    }
-                }
-            }
-        }
-
         stage('Wait for MySQL') {
             steps {
                 script {
@@ -69,6 +58,16 @@ pipeline {
                             sed -i 's/PLACEHOLDER_PASSWORD/${REPLACEMENT_PASSWORD}/g' init.sql
                             docker exec -i mysql-db mysql -h ${DB_HOST} -P ${DB_PORT} -u ${DB_USER} -p${DB_PASSWORD} ${DB_NAME} < init.sql
                         """
+                    }
+                }
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    docker.image('node:22').inside {
+                        sh 'npm install'
                     }
                 }
             }
