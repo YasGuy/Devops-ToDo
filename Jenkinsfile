@@ -42,6 +42,11 @@ pipeline {
                 script {
                     docker.image('node:22').inside {
                         sh '''
+                        # Fix permissions for npm directory
+                        sudo chown -R node:node /usr/local/lib/node_modules
+                        sudo chown -R node:node /home/node/.npm
+
+                        # Run npm install
                         npm install
                         '''
                     }
