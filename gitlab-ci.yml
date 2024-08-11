@@ -7,13 +7,24 @@ stages:
 variables:
   DOCKER_REGISTRY: docker.io
   DOCKER_IMAGE_NAME: yassird/todo-app
-  # Default to version 0 if no previous version is found
   VERSION: "1"
+
+services:
+  - name: mysql:9.0
+    alias: mysql
+    command: ["--default-authentication-plugin=mysql_native_password"]
 
 before_script:
   - echo "Setting up Node.js"
   - npm install -g npm@latest
   - npm install -g mocha chai supertest
+  - echo "Waiting for MySQL to start..."
+  - until mysqladmin ping -h mysql --silent; do sleep 1; done
+  - echo "MySQL started, initializing database..."
+  # Replace placeholder in init.sql and execute it
+  - envsubst < init.sql | mysql -h mysql -u root -p$MYSQL_ROOT_PASSWORD
+  # Alternatively, using sed to replace placeholder
+  # - sed "s/{{MYSQL_PASSWORD}}/$MYSQL_PASSWORD/" init.sql | mysql -h mysql -u root -p$MYSQL_ROOT_PASSWORD
 
 install_dependencies:
   stage: install
@@ -25,7 +36,7 @@ test:
   stage: test
   script:
     - echo "Running tests"
-    - npx mocha test/server.test.mjs
+    - npx mocha test/server.test.js
 
 prepare_version:
   stage: build
@@ -51,7 +62,6 @@ deploy:
     - docker push $DOCKER_IMAGE_NAME:$DOCKER_TAG
     - echo "Docker image pushed with tag: $DOCKER_TAG"
 
-# Optionally, you can add a cleanup step to remove dangling Docker images
 cleanup:
   stage: cleanup
   script:
