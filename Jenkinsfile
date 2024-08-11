@@ -40,9 +40,13 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    sh 'nvm install ${NODE_VERSION}'
-                    sh 'nvm use ${NODE_VERSION}'
-                    sh 'npm install'
+                    sh '''
+                    sudo apt update
+                    sudo apt install -y nodejs npm
+                    node --version
+                    npm --version
+                    npm install
+                    '''
                 }
             }
         }
