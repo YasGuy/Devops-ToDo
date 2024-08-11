@@ -1,8 +1,12 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'node:22'  // Use a Docker image with Node.js pre-installed
+            args '-v /var/lib/jenkins/workspace:/workspace'  // Mount the Jenkins workspace
+        }
+    }
 
     environment {
-        NODE_VERSION = '22'
         DOCKER_IMAGE_NAME = 'todo-app'
         DOCKER_TAG = "${env.BUILD_NUMBER}"
         DB_HOST = 'localhost'
@@ -37,20 +41,6 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
-            steps {
-                script {
-                    sh '''
-                    sudo apt update
-                    sudo apt install -y nodejs npm
-                    node --version
-                    npm --version
-                    npm install
-                    '''
-                }
-            }
-        }
-
         stage('Wait for MySQL') {
             steps {
                 script {
@@ -65,9 +55,17 @@ pipeline {
                     withCredentials([string(credentialsId: "${REPLACEMENT_PASSWORD}", variable: 'REPLACEMENT_PASSWORD')]) {
                         sh """
                             sed -i 's/PLACEHOLDER_PASSWORD/${REPLACEMENT_PASSWORD}/g' init.sql
-                            docker exec -i mysql-test mysql -h ${DB_HOST} -P ${DB_PORT} -u ${DB_USER} -p${DB_PASSWORD} ${DB_NAME} < init.sql
+                            docker exec -i mysql-db mysql -h ${DB_HOST} -P ${DB_PORT} -u ${DB_USER} -p${DB_PASSWORD} ${DB_NAME} < init.sql
                         """
                     }
+                }
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    sh 'npm install'
                 }
             }
         }
@@ -113,8 +111,8 @@ pipeline {
     post {
         always {
             script {
-                sh 'docker stop mysql-test || true'
-                sh 'docker rm mysql-test || true'
+                sh 'docker stop mysql-db || true'
+                sh 'docker rm mysql-db || true'
             }
             cleanWs()
         }
