@@ -38,7 +38,8 @@ pipeline {
                 }
 
                 // Install Dependencies and Test
-                docker.image('node:22').inside {
+                docker {
+                    image 'node:22'
                     sh 'npm install'
                     sh 'npm test'
                 }
