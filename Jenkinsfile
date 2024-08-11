@@ -25,7 +25,14 @@ pipeline {
 
                 // Start MySQL
                 withCredentials([usernamePassword(credentialsId: "${DB_CREDENTIALS_ID}", usernameVariable: 'DB_USER', passwordVariable: 'DB_PASSWORD')]) {
-                    sh "docker run -d --name mysql-db -e MYSQL_ROOT_PASSWORD=${DB_PASSWORD} -e MYSQL_DATABASE=${DB_NAME} -p ${DB_PORT}:3306 mysql:9.0"
+                    sh """
+                        docker run -d \
+                          --name mysql-db \
+                          -e MYSQL_ROOT_PASSWORD=${DB_PASSWORD} \
+                          -e MYSQL_DATABASE=${DB_NAME} \
+                          -p ${DB_PORT}:3306 \
+                          mysql:9.0
+                    """
                 }
 
                 // Wait for MySQL
@@ -33,8 +40,10 @@ pipeline {
 
                 // Initialize Database
                 withCredentials([string(credentialsId: "${REPLACEMENT_PASSWORD}", variable: 'REPLACEMENT_PASSWORD')]) {
-                    sh "sed -i 's/PLACEHOLDER_PASSWORD/${REPLACEMENT_PASSWORD}/g' init.sql"
-                    sh "docker exec -i mysql-db mysql -h ${DB_HOST} -P ${DB_PORT} -u ${DB_USER} -p${DB_PASSWORD} ${DB_NAME} < init.sql"
+                    sh """
+                        sed -i 's/PLACEHOLDER_PASSWORD/${REPLACEMENT_PASSWORD}/g' init.sql
+                        docker exec -i mysql-db mysql -h ${DB_HOST} -P ${DB_PORT} -u ${DB_USER} -p${DB_PASSWORD} ${DB_NAME} < init.sql
+                    """
                 }
 
                 // Install Dependencies and Test
