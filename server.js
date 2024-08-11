@@ -47,10 +47,6 @@ app.get('/fail', (req, res) => {
     res.status(500).send('Simulated failure');
 });
 
-// Health check route
-app.get('/health', (req, res) => {
-    res.status(200).send('OK');
-});
 
 // Get all tasks
 app.get('/tasks', (req, res) => {

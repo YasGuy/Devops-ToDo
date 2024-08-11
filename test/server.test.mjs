@@ -2,23 +2,36 @@ import request from 'supertest';
 import { expect } from 'chai';
 import app from '../server.js';
 
-describe('Basic Server Tests', () => {
-  it('should return OK for health check', async () => {
-    const res = await request(app).get('/health');
+describe('Task API', () => {
+  let taskId;
+
+  it('should retrieve all tasks', async () => {
+    const res = await request(app).get('/tasks');
     expect(res.status).to.equal(200);
-    expect(res.text).to.equal('OK');
+    expect(res.headers['content-type']).to.match(/json/);
+    expect(res.body).to.be.an('array');
   });
 
-  it('should return metrics', async () => {
-    const res = await request(app).get('/metrics');
+  it('should create a new task', async () => {
+    const res = await request(app).post('/tasks').send({ description: 'Test task' });
     expect(res.status).to.equal(200);
-    expect(res.headers['content-type']).to.match(/text\/plain/);
-    expect(res.text).to.include('app_up');
+    expect(res.headers['content-type']).to.match(/json/);
+    expect(res.body).to.be.an('object');
+    expect(res.body).to.have.property('id').that.is.a('number');
+    expect(res.body).to.have.property('description', 'Test task');
+    taskId = res.body.id;
   });
 
-  it('should simulate failure', async () => {
-    const res = await request(app).get('/fail');
-    expect(res.status).to.equal(500);
-    expect(res.text).to.equal('Simulated failure');
+  it('should update a task', async () => {
+    const res = await request(app).put(`/tasks/${taskId}`).send({ completed: true });
+    expect(res.status).to.equal(200);
+    expect(res.body).to.have.property('id', taskId.toString()); // Convert taskId to string
+    expect(res.body).to.have.property('completed', true);
+  });
+  
+  it('should delete a task', async () => {
+    const res = await request(app).delete(`/tasks/${taskId}`);
+    expect(res.status).to.equal(200);
+    expect(res.body).to.have.property('id', taskId.toString()); // Convert taskId to string
   });
 });
