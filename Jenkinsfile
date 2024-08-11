@@ -1,12 +1,8 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:22'  // Use a Docker image with Node.js pre-installed
-            args '-v /var/lib/jenkins/workspace:/workspace'  // Mount the Jenkins workspace
-        }
-    }
+    agent any  // This runs the pipeline on a Jenkins node (host machine)
 
     environment {
+        NODE_VERSION = '22'
         DOCKER_IMAGE_NAME = 'todo-app'
         DOCKER_TAG = "${env.BUILD_NUMBER}"
         DB_HOST = 'localhost'
@@ -41,6 +37,16 @@ pipeline {
             }
         }
 
+        stage('Install Dependencies') {
+            steps {
+                docker.image('node:22').inside {
+                    sh '''
+                    npm install
+                    '''
+                }
+            }
+        }
+
         stage('Wait for MySQL') {
             steps {
                 script {
@@ -62,26 +68,18 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
-            steps {
-                script {
-                    sh 'npm install'
-                }
-            }
-        }
-
         stage('Start App and Test') {
             parallel {
                 stage('Start App') {
                     steps {
-                        script {
+                        docker.image('node:22').inside {
                             sh 'nohup npm start &'
                         }
                     }
                 }
                 
                 stage('Test') {
-                    steps {
+                    docker.image('node:22').inside {
                         sh 'npm test'
                     }
                 }
