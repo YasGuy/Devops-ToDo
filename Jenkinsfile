@@ -26,11 +26,11 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: "${DB_CREDENTIALS_ID}", usernameVariable: 'DB_USER', passwordVariable: 'DB_PASSWORD')]) {
                         sh """
                             docker run -d \
-                              --name mysql-test \
+                              --name mysql-db \
                               -e MYSQL_ROOT_PASSWORD=${DB_PASSWORD} \
                               -e MYSQL_DATABASE=${DB_NAME} \
                               -p ${DB_PORT}:3306 \
-                              mysql:8
+                              mysql:9.0
                         """
                     }
                 }
