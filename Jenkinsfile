@@ -45,9 +45,12 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    sh 'npm install'
+                    // Run npm install inside the Docker container
+                    docker.image('node:22').inside {
+                        sh 'npm install'
+                    }
                 }
-        }  // This runs the pipeline on a Jenkins node (host machine)
+            }
         }
 
         stage('Wait for MySQL') {
