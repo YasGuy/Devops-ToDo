@@ -1,0 +1,58 @@
+stages:
+  - install
+  - test
+  - build
+  - deploy
+
+variables:
+  DOCKER_REGISTRY: docker.io
+  DOCKER_IMAGE_NAME: yassird/todo-app
+  # Default to version 0 if no previous version is found
+  VERSION: "1"
+
+before_script:
+  - echo "Setting up Node.js"
+  - npm install -g npm@latest
+  - npm install -g mocha chai supertest
+
+install_dependencies:
+  stage: install
+  script:
+    - echo "Installing dependencies"
+    - npm install
+
+test:
+  stage: test
+  script:
+    - echo "Running tests"
+    - npx mocha test/server.test.mjs
+
+prepare_version:
+  stage: build
+  script:
+    - echo "Retrieving the latest Docker version tag from Docker Hub"
+    - export VERSION=$(curl -s https://hub.docker.com/v2/repositories/${DOCKER_IMAGE_NAME}/tags/?page_size=1 | jq -r '.results[0].name' | grep -Eo '[0-9]+' | awk '{print $1+1}')
+    - echo "New version will be: $VERSION"
+    - export DOCKER_TAG="v$VERSION"
+
+build_image:
+  stage: build
+  script:
+    - echo "Building Docker image"
+    - docker build -t $DOCKER_IMAGE_NAME:$DOCKER_TAG .
+    - echo "Docker image built with tag: $DOCKER_TAG"
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Logging in to Docker Hub"
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - echo "Pushing Docker image to Docker Hub"
+    - docker push $DOCKER_IMAGE_NAME:$DOCKER_TAG
+    - echo "Docker image pushed with tag: $DOCKER_TAG"
+
+# Optionally, you can add a cleanup step to remove dangling Docker images
+cleanup:
+  stage: cleanup
+  script:
+    - docker image prune -f
