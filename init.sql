@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS tasks (
 );
 
 -- Create user if it doesn't already exist
-CREATE USER IF NOT EXISTS 'todo_user'@'%' IDENTIFIED BY 'insert_pass';
+CREATE USER IF NOT EXISTS 'todo_user'@'%' IDENTIFIED BY 'PLACEHOLDER_PASSWORD';
 
 -- Grant necessary permissions to the user
 GRANT ALL PRIVILEGES ON todo_db.* TO 'todo_user'@'%';

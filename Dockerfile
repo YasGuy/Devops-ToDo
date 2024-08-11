@@ -17,7 +17,7 @@ WORKDIR /usr/src/app
 COPY --from=build /usr/src/app/node_modules /usr/src/app/node_modules
 COPY --from=build /usr/src/app .
 
-EXPOSE 3000
+EXPOSE 3030
 
 # Command to run your app
 CMD ["npm", "start"]
