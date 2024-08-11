@@ -21,10 +21,7 @@ before_script:
   - echo "Waiting for MySQL to start..."
   - until mysqladmin ping -h mysql --silent; do sleep 1; done
   - echo "MySQL started, initializing database..."
-  # Replace placeholder in init.sql and execute it
   - envsubst < init.sql | mysql -h mysql -u root -p$MYSQL_ROOT_PASSWORD
-  # Alternatively, using sed to replace placeholder
-  # - sed "s/{{MYSQL_PASSWORD}}/$MYSQL_PASSWORD/" init.sql | mysql -h mysql -u root -p$MYSQL_ROOT_PASSWORD
 
 install_dependencies:
   stage: install
@@ -42,16 +39,20 @@ prepare_version:
   stage: build
   script:
     - echo "Retrieving the latest Docker version tag from Docker Hub"
-    - export VERSION=$(curl -s https://hub.docker.com/v2/repositories/${DOCKER_IMAGE_NAME}/tags/?page_size=1 | jq -r '.results[0].name' | grep -Eo '[0-9]+' | awk '{print $1+1}')
-    - echo "New version will be: $VERSION"
-    - export DOCKER_TAG="v$VERSION"
+    - VERSION=$(curl -s https://hub.docker.com/v2/repositories/${DOCKER_IMAGE_NAME}/tags/?page_size=1 | jq -r '.results[0].name' | grep -Eo '[0-9]+' | awk '{print $1+1}')
+    # - echo "New version will be: $VERSION"
+    - DOCKER_TAG="v$VERSION"
+    # - echo "Docker tag will be: $DOCKER_TAG"
+    # Save the DOCKER_TAG as an environment variable for the next job
+    - echo "DOCKER_TAG=$DOCKER_TAG" >> $CI_PROJECT_DIR/.env
 
 build_image:
   stage: build
   script:
     - echo "Building Docker image"
+    - source .env
     - docker build -t $DOCKER_IMAGE_NAME:$DOCKER_TAG .
-    - echo "Docker image built with tag: $DOCKER_TAG"
+    # - echo "Docker image built with tag: $DOCKER_TAG"
 
 deploy:
   stage: deploy
@@ -59,8 +60,9 @@ deploy:
     - echo "Logging in to Docker Hub"
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
     - echo "Pushing Docker image to Docker Hub"
+    - source .env
     - docker push $DOCKER_IMAGE_NAME:$DOCKER_TAG
-    - echo "Docker image pushed with tag: $DOCKER_TAG"
+    # - echo "Docker image pushed with tag: $DOCKER_TAG"
 
 cleanup:
   stage: cleanup
