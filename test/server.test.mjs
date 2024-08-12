@@ -4,6 +4,17 @@ import app from '../server.js';
 
 describe('Task API', () => {
   let taskId;
+  let server;
+
+  before(() => {
+    server = app.listen(3031); // Start the test server on a different port
+  });
+
+  after(() => {
+    server.close(() => {
+      process.exit(0); // Exit the process after the server is closed
+    });
+  });
 
   it('should retrieve all tasks', async () => {
     const res = await request(app).get('/tasks');
