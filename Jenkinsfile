@@ -28,7 +28,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 // Build the Docker image
-                sh 'docker build -t ${DOCKER_IMAGE}:${env.BUILD_NUMBER} .'
+                sh 'docker build -t ${DOCKER_IMAGE}:latest .'
             }
         }
         
@@ -38,11 +38,11 @@ pipeline {
                 sh 'echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin'
                 
                 // Push the Docker image
-                sh 'docker push ${DOCKER_IMAGE}:${env.BUILD_NUMBER}'
+                sh 'docker push ${DOCKER_IMAGE}:$latest'
                 
                 // Optionally, tag the latest build
-                sh 'docker tag ${DOCKER_IMAGE}:${env.BUILD_NUMBER} ${DOCKER_IMAGE}:${env.BUILD_NUMBER}'
-                sh 'docker push ${DOCKER_IMAGE}:${env.BUILD_NUMBER}'
+                sh 'docker tag ${DOCKER_IMAGE}:latest ${DOCKER_IMAGE}:latest'
+                sh 'docker push ${DOCKER_IMAGE}:latest'
             }
         }
     }
@@ -50,7 +50,7 @@ pipeline {
     post {
         always {
             // Clean up Docker environment to avoid disk space issues
-            sh 'docker rmi ${DOCKER_IMAGE}:${env.BUILD_NUMBER} || true'
+            sh 'docker rmi ${DOCKER_IMAGE}:latest || true'
         }
         success {
             echo 'Build completed successfully!'
