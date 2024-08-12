@@ -2,7 +2,6 @@ pipeline {
     agent any
     
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('docker-credentials')
         DOCKER_IMAGE = "yassird/todo-app"
         DB_HOST = 'localhost'
         DB_USER = 'todo_user'
@@ -34,9 +33,8 @@ pipeline {
         
         stage('Push Docker Image') {
             steps {
-                // Log in to Docker Hub
-                sh 'echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin'
-                
+                withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'               
                 // Push the Docker image
                 sh 'docker push ${DOCKER_IMAGE}:$latest'
                 
