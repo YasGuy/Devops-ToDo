@@ -34,13 +34,14 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'               
-                // Push the Docker image
-                sh 'docker push ${DOCKER_IMAGE}:$latest'
-                
-                // Optionally, tag the latest build
-                sh 'docker tag ${DOCKER_IMAGE}:latest ${DOCKER_IMAGE}:latest'
-                sh 'docker push ${DOCKER_IMAGE}:latest'
+                    sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'               
+                    // Push the Docker image
+                    sh 'docker push ${DOCKER_IMAGE}:latest'
+                    
+                    // Optionally, tag the latest build
+                    sh 'docker tag ${DOCKER_IMAGE}:latest ${DOCKER_IMAGE}:latest'
+                    sh 'docker push ${DOCKER_IMAGE}:latest'
+                } // <--- Add this closing bracket
             }
         }
     }
