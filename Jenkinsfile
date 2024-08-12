@@ -33,6 +33,7 @@ pipeline {
         
         stage('Push Docker Image') {
             steps {
+                sh 'pass init' // Initialize the pass store
                 withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'               
                     // Push the Docker image
@@ -41,7 +42,7 @@ pipeline {
                     // Optionally, tag the latest build
                     sh 'docker tag ${DOCKER_IMAGE}:latest ${DOCKER_IMAGE}:latest'
                     sh 'docker push ${DOCKER_IMAGE}:latest'
-                } // <--- Add this closing bracket
+                }
             }
         }
     }
