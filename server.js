@@ -4,8 +4,7 @@ import mysql from 'mysql2';
 import bodyParser from 'body-parser';
 import client from 'prom-client';
 
-const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
-dotenv.config({ path: envFile });
+dotenv.config();
 
 const app = express();
 const port = 3030;
